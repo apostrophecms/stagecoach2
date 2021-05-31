@@ -1,7 +1,30 @@
 {
+  "name": "stagecoach2",
+  "version": "0.1.0",
+  "description": "Deploy your projects to any Linux server with a simple \"git push\"",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/stagecoach2"
+  },
+  "keywords": [
+    "nginx",
+    "apostrophe",
+    "apostrophecms",
+    "deploy",
+    "deployment",
+    "hosting"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/stagecoach2/issues"
+  },
+  "homepage": "https://github.com/apostrophecms/stagecoach2",
   "dependencies": {
+    "boring": "^1.1.1",
     "dayjs": "^1.10.5",
     "express": "^4.17.1",
+    "fs-extra": "^10.0.0",
     "lockfile": "^1.0.4",
     "node-fetch": "^2.6.1"
   }
