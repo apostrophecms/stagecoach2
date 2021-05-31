@@ -11,9 +11,10 @@ const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
 
 const argv = require('boring')();
+const configFile = process.env.CONFIG || '/usr/local/etc/stagecoach.json';
 
 let config;
-fs.watchFile(config, readConfig);
+fs.watchFile(configFile, readConfig);
 readConfig();
 
 const root = config.root || '/opt/stagecoach';
@@ -307,5 +308,5 @@ async function listen(port) {
 }
 
 function readConfig() {
-  config = JSON.parse(fs.readFileSync(process.env.CONFIG || '/usr/local/etc/stagecoach.json', 'utf8')); 
+  config = JSON.parse(fs.readFileSync(configFile, 'utf8')); 
 }

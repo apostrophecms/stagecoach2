@@ -27,13 +27,13 @@ Alpha. Still experimental.
 }
 ```
 
-**Step 2.** Install the stagecoach2 npm package globally:
+**Step 2.** As root, install the stagecoach2 npm package globally:
 
 ```
 npm install -g stagecoach2
 ```
 
-**Step 3.** Make sure that user is readable by the user you'll be running your deployments and your Node.js apps as:
+**Step 3.** As root, make sure that user is readable by the user you'll be running your deployments and your Node.js apps as:
 
 ```
 chown nodeapps.nodeapps /usr/local/etc/stagecoach2.json
@@ -41,9 +41,10 @@ chown nodeapps.nodeapps /usr/local/etc/stagecoach2.json
 
 > Notice that we give `develop` a separate shortName so that it can have a nonconflicting deployment folder on the same server. If you go this road it is up to your `app.js` project code to find its shortName as part of `__filename` and use it as the ApostropheCMS `shortName` option. If we don't specify `shortName` it will match the project name.
 
-**Step 4.** Tell stagecoach to install itself for automatic restart, and to start now:
+**Step 4.** While logged in as the appropriate user, or via `su`, tell stagecoach to install itself for automatic restart and to start now:
 
 ```
+su - nodeapps
 stagecoach install
 ```
 
