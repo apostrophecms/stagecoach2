@@ -14,7 +14,12 @@ const argv = require('boring')();
 const configFile = process.env.CONFIG || '/usr/local/etc/stagecoach.json';
 
 let config;
-fs.watchFile(configFile, readConfig);
+fs.watch(configFile, { persistent: false }, readConfig);
+fs.watch(__filename, { persistent: false }, () => {
+  console.log('Exiting to enable restart with newly installed version of stagecoach');
+  process.exit(0);
+});
+
 readConfig();
 
 const root = config.root || '/opt/stagecoach';
@@ -95,7 +100,7 @@ if (argv._[0] === 'install') {
     }    
   }
   if (crontab.match(/stagecoach/)) {
-    console.log('Aleady scheduled in cron.');
+    console.log('Already scheduled in cron.');
   } else {
     crontab = crontab.replace(/\n$/, '') + '\n* * * * * stagecoach --if-not-running\n';
     const child = cp.exec('crontab');
