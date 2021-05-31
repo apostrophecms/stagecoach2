@@ -86,19 +86,16 @@ if (argv._[0] === 'install') {
   console.log('Installing via cron');
   let crontab = '';
   try {
-    const task = cp.execSync('crontab -l', { encoding: 'utf8' });
-    console.log(task);
-    crontab = task.stdout;
+    crontab = cp.execSync('crontab -l', { encoding: 'utf8' });
   } catch (e) {
-    console.error('>>', e, e.stderr);
     if (e.stderr.match(/no crontab/)) {
-      // That's OK
+      console.log('Creating crontab for the first time');
     } else {
       throw e;
     }    
   }
   if (crontab.match(/stagecoach/)) {
-    console.log('Aleady installed.');
+    console.log('Aleady scheduled in cron.');
   } else {
     crontab = crontab.replace(/\n$/, '') + '\n* * * * * stagecoach --if-not-running\n';
     const child = cp.exec('crontab');
