@@ -12,12 +12,18 @@ const unlock = util.promisify(lockfile.unlock);
 
 const argv = require('boring')();
 const configFile = process.env.CONFIG || '/usr/local/etc/stagecoach.json';
-
 let config;
+let deploying = 0;
+let exitAfterDeploy = false;
+
 fs.watch(configFile, { persistent: false }, readConfig);
 fs.watch(__filename, { persistent: false }, () => {
-  console.log('Exiting to enable restart with newly installed version of stagecoach');
-  process.exit(0);
+  if (deploying > 0) {
+    exitAfterDeploy = true;
+  } else {
+    console.log('Exiting to enable restart with newly installed version of stagecoach');
+    process.exit(0);
+  }
 });
 
 readConfig();
@@ -69,6 +75,7 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   const lockFile = `${root}/deploy.lock`;
   let locked;
   try {
+    deploying++;
     await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
     locked = true;
     await deploy(project, branch, timestamp, logName);
@@ -78,6 +85,11 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   } finally {
     if (locked) {
       await unlock(lockFile);
+    }
+    deploying--;
+    if (exitAfterDeploying && (deploying === 0)) {
+      console.log('Exiting to enable restart with newly installed version of stagecoach');
+      process.exit(0);
     }
   }
 });
