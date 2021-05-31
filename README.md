@@ -1,5 +1,9 @@
 # stagecoach2
 
+## Stability
+
+Alpha. Still experimental.
+
 ## Installation
 
 ```
