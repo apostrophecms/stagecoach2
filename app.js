@@ -86,7 +86,9 @@ if (argv._[0] === 'install') {
   console.log('Installing via cron');
   let crontab = '';
   try {
-    crontab = cp.execSync('crontab -l', { encoding: 'utf8' }).stdout;
+    const task = cp.execSync('crontab -l', { encoding: 'utf8' });
+    console.log(task);
+    crontab = task.stdout;
   } catch (e) {
     console.error('>>', e, e.stderr);
     if (e.stderr.match(/no crontab/)) {
