@@ -12,7 +12,10 @@ const unlock = util.promisify(lockfile.unlock);
 
 const argv = require('boring')();
 
-const config = JSON.parse(fs.readFileSync(process.env.CONFIG || '/usr/local/etc/stagecoach.json', 'utf8'));
+let config;
+fs.watchFile(config, readConfig);
+readConfig();
+
 const root = config.root || '/opt/stagecoach';
 
 fs.mkdirpSync(`${root}/deployment-logs`);
@@ -301,4 +304,8 @@ async function listen(port) {
     server.on('error', reject);
     server.on('listening', resolve);
   });
+}
+
+function readConfig() {
+  config = JSON.parse(fs.readFileSync(process.env.CONFIG || '/usr/local/etc/stagecoach.json', 'utf8')); 
 }
