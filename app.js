@@ -84,7 +84,17 @@ app.get('/stagecoach/deployment-logs/:file', function (req, res) {
 
 if (argv._[0] === 'install') {
   console.log('Installing via cron');
-  const crontab = cp.execSync('crontab -l', { encoding: 'utf8' }).stdout;
+  let crontab = '';
+  try {
+    crontab = cp.execSync('crontab -l', { encoding: 'utf8' }).stdout;
+  } catch (e) {
+    console.error('>>', e, e.stderr);
+    if (e.stderr.match(/no crontab/)) {
+      // That's OK
+    } else {
+      throw e;
+    }    
+  }
   if (crontab.match(/stagecoach/)) {
     console.log('Aleady installed.');
   } else {

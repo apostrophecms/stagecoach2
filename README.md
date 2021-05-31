@@ -39,6 +39,13 @@ npm install -g stagecoach2
 chown nodeapps.nodeapps /usr/local/etc/stagecoach2.json
 ```
 
+**Step 4.** Create the `/opt/stagecoach` folder and give it to the appropriate user:
+
+```
+mkdir /opt/stagecoach
+chown nodeapps.nodeapps /opt/stagecoach
+```
+
 > Notice that we give `develop` a separate shortName so that it can have a nonconflicting deployment folder on the same server. If you go this road it is up to your `app.js` project code to find its shortName as part of `__filename` and use it as the ApostropheCMS `shortName` option. If we don't specify `shortName` it will match the project name.
 
 **Step 4.** While logged in as the appropriate user, or via `su`, tell stagecoach to install itself for automatic restart and to start now:
