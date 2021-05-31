@@ -102,7 +102,7 @@ if (argv._[0] === 'install') {
     const child = cp.exec('crontab');
     child.on('close', code => process.exit(code));
     child.stdin.write(crontab);
-    child.stdin.close();
+    child.stdin.end();
   }
 } else {
   server();
