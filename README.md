@@ -4,6 +4,7 @@
 
 ```
 npm install -g stagecoach2
+stagecoach install
 ```
 
 ## Configuration

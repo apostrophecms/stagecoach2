@@ -91,6 +91,10 @@ if (argv._[0] === 'install') {
     child.stdin.close();
   }
 } else {
+  server();
+}
+
+async function server() {
   // Default port number well out of conflict with typical stagecoach ports
   const port = process.env.PORT || 4000;
   try {
