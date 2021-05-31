@@ -27,5 +27,8 @@
     "fs-extra": "^10.0.0",
     "lockfile": "^1.0.4",
     "node-fetch": "^2.6.1"
+  },
+  "bin": {
+    "stagecoach": "./bin/stagecoach"
   }
 }
