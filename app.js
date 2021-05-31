@@ -63,7 +63,7 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   res.send('deploying');
   // Wait one second before we tell Slack where the logs are, in case they are not ready yet
   setTimeout(function() {
-    slack(`Starting deployment to ${branch.name}, you may view and refresh logs at https://${host}/stagecoach/deployment-logs/${logName}`);
+    slack(project, branch, `Starting deployment to ${branch.name}, you may view and refresh logs at https://${host}/stagecoach/deployment-logs/${logName}`);
   }, 1000);
   // Make sure stdout and stderr go to the same place so we can pipe easily
   const lockFile = `${root}/deploy.lock`;
@@ -72,9 +72,9 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
     await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
     locked = true;
     await deploy(project, branch, timestamp, logName);
-    slack(`👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
+    slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
   } catch (e) {
-    slack(`⚠️ Deployment to ${branch.name} FAILED with error code ${e.code || e}, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
+    slack(project, branch, `⚠️ Deployment to ${branch.name} FAILED with error code ${e.code || e}, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
   } finally {
     if (locked) {
       await unlock(lockFile);
@@ -286,10 +286,11 @@ async function deploy(project, branch, timestamp, logName) {
 
 }
 
-function slack(text) {
-  if (config.project.slackWebhook) {
+function slack(project, branch, text) {
+  const webhook = branch.slackWebhook || project.slackWebhook || config.slackWebhook;
+  if (webhook) {
     return fetch(
-      config.project.slackWebhook || config.slackWebhook, {
+      webhook, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
