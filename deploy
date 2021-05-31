@@ -1,0 +1,133 @@
+#!/bin/bash
+
+# This script runs on the server to actually deploy the app.
+# Already in the environment: GIT_KEY, REPO, SHORTNAME. Adapted
+# from stagecoach
+
+(
+  rm -rf $FOLDER &&
+  git clone $REPO $FOLDER &&
+  cd $FOLDER &&
+  npm install &&
+  mkdir -p deployment
+) || exit 1
+
+DIR=/opt/stagecoach/apps/$SHORTNAME
+
+if [ ! -d "deployment" ]; then
+  echo "I don't see a deployment folder in the current directory."
+  exit 1
+fi
+
+if [ -f "deployment/rsync_exclude.txt" ]; then
+  EXCLUDE="--exclude-from=deployment/rsync_exclude.txt"
+else
+  EXCLUDE=""
+fi
+
+VERSION=`date "+%Y-%m-%d-%H-%M-%S"`
+
+# rsync to a new folder, then flip the symlink if everything runs without error.
+#
+# start is run after the symlink is changed so the current directory looks
+# more reasonable to other scripts.
+
+DEPLOYMENTS="$DIR/deployments"
+DEPLOYTO="$DEPLOYMENTS/$VERSION"
+CURRENT="$DIR/current"
+
+# Keep 5 deployments by default
+if [ -z "$KEEP" ]; then
+  KEEP=5
+fi
+
+# For use with tail -n
+KEPT=$[$KEEP+1]
+
+if [ -f "deployment/before-connecting" ]; then
+  # A good place to run "gulp" etc.
+  bash deployment/before-connecting $TARGET || FAILED=1
+fi
+
+# For now we just don't check whether 'stop' worked, because it fails on the first
+# deploy (chicken and egg problem, stop isn't there yet). TODO: fix this with
+# an 'if folder exists' test on the server; make the remote script a multiline,
+# maintainable thing
+
+mkdir -p "$DIR/deployments" || FAILED=1
+ 
+# -C excludes many things, add back "core" because it is not an uncommon
+# folder name in npm modules
+
+rsync -C -a --delete $EXCLUDE --include "core" . $USER@$SERVER:$DEPLOYTO &&
+echo "Looking for dependencies script at $DEPLOYTO/deployment/dependencies"
+if [ -f $DEPLOYTO/deployment/dependencies ]; then
+  cd $DEPLOYTO &&
+  echo "Running deployment/dependencies" &&
+  bash deployment/dependencies
+fi
+
+if [ ! -e "$FAILED" ]; then
+  OUTCOME=1
+fi
+
+OUTCOME="\$?"
+if [ \$OUTCOME -eq 0 ]; then
+  # Stop old deployment if any
+  if [ -e $CURRENT ]; then
+    # Don't give up yet if we can't stop the old deployment - it might just be
+    # broken and the main reason we're deploying a new one
+    FORMER=\`readlink $CURRENT\`
+    if [ \$? -eq 0 ]; then
+      cd $CURRENT &&
+      echo "Stopping previous deployment" &&
+      STOPPED=1 &&
+      bash deployment/stop
+    else
+      echo "Previous deployment is missing"
+    fi
+  fi
+  # Run migrations and start new deployment after flipping symlink
+  echo "Running migrations"
+  cd $DEPLOYTO &&
+  bash deployment/migrate &&
+  echo "Symlinking current deployment" &&
+  rm -rf $CURRENT &&
+  ln -s $DEPLOYTO $CURRENT &&
+  cd $CURRENT &&
+  echo "Invoking deployment/start" &&
+  bash deployment/start
+  OUTCOME="\$?"
+fi
+# If deployment failed, relink and restart the previous deployment
+if [ \$OUTCOME -ne 0 ]; then
+  echo "ERROR on deployment"
+  if [ -n "\$FORMER" ]; then
+    echo "Relinking previous deployment"
+    rm -f $CURRENT
+    ln -s \$FORMER $CURRENT &&
+    if [ \$STOPPED -eq 1 ]; then
+      echo "Restarting previous deployment" &&
+      cd $CURRENT && bash deployment/start
+    fi
+  fi
+  echo "Removing failed deployment"
+  rm -rf $DEPLOYTO
+  # Maintain a nonzero status so we know it's an overall failure
+  false
+else
+  echo "Launch successful."
+  echo "Removing old deployments as appropriate..."
+  # ls sorts alphabetically by default, our deployments are named to sort that way
+  # Thanks to @xavismeh for the tail -n approach
+  echo "Keeping $KEEP deployments"
+  find "$DEPLOYMENTS" -mindepth 1 -maxdepth 1 | sort -r | tail -n +$KEPT | xargs rm -rf
+  echo "Done."
+fi
+
+if [ $? -ne 0 ]; then
+  echo "Deployment failed!"
+  exit 1
+else
+  echo "Deployment successful."
+fi
