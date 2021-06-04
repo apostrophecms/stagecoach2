@@ -6,7 +6,7 @@ Alpha. Still experimental.
 
 ## Configuration
 
-**Step 1.** Create `/usr/local/etc/stagecoach2.json` on your server, as follows:
+**Step 1.** Create `/usr/local/etc/stagecoach.json` on your server, as follows:
 
 ```
 {
@@ -55,12 +55,12 @@ su - nodeapps
 stagecoach install
 ```
 
-**Step 5.** Configure your proxy server, such as `nginx`, to direct traffic from the `/stagecoach2` subdirectory of your site to port `4000` instead of your application. For simplicity, **do not** rewrite the path part of the URL. Leave it intact.
+**Step 5.** Configure your proxy server, such as `nginx`, to direct traffic from the `/stagecoach` subdirectory of your site to port `4000` instead of your application. For simplicity, **do not** rewrite the path part of the URL. Leave it intact.
 
 **Step 6.** Add a github outgoing webhook like this:
 
 ```
-https://your-site.com/stagecoach2/deploy/project-name/main?key=password-you-create
+https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-create
 ```
 
 > Configure the webhook to trigger only for the same branch name that is in your webhook URL, unless you need it to trigger for another reason, for instance when a dependency is updated in another repo that you maintain.
