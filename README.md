@@ -33,10 +33,10 @@ Alpha. Still experimental.
 npm install -g stagecoach2
 ```
 
-**Step 3.** As root, make sure that user is readable by the user you'll be running your deployments and your Node.js apps as:
+**Step 3.** As root, make sure that file is readable by the user you'll be running your deployments and your Node.js apps as:
 
 ```
-chown nodeapps.nodeapps /usr/local/etc/stagecoach2.json
+chown nodeapps.nodeapps /usr/local/etc/stagecoach.json
 ```
 
 **Step 4.** Create the `/opt/stagecoach` folder and give it to the appropriate user:
@@ -79,4 +79,4 @@ https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-creat
 
 `stagecoach2` can be used as a drop-in replacement for stagecoach classic, eliminating the need to type `sc-deploy`. You can even continue to use `stagecoach` temporarily while transitioning to git push-based deployment with `stagecoach2`.
 
-Some use cases of stagecoach classic, such as rollbacks, are not yet covered by `stagecoach2`. You can still use those stagecoach classic commands if you need them.
+Some use cases of stagecoach classic, such as rollbacks or restarts, are not covered in the same way by `stagecoach2`. You can roll back by deploying a previous commit. There is currently no convenience feature for restarts, but you can force a new deployment by accessing your webhook URL.
