@@ -60,7 +60,7 @@ stagecoach install
 **Step 6.** Add a github outgoing webhook like this:
 
 ```
-https://your-site.com/stagecoach2/deploy/project-name/main?password-you-create
+https://your-site.com/stagecoach2/deploy/project-name/main?key=password-you-create
 ```
 
 > Configure the webhook to trigger only for the same branch name that is in your webhook URL, unless you need it to trigger for another reason, for instance when a dependency is updated in another repo that you maintain.
