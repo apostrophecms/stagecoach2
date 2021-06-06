@@ -63,8 +63,6 @@ stagecoach install
 https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-create
 ```
 
-> Configure the webhook to trigger only for the same branch name that is in your webhook URL, unless you need it to trigger for another reason, for instance when a dependency is updated in another repo that you maintain.
-
 **Step 7.** Create a slack webhook and add it to your configuration as shown above. This is how you will receive notice of deployments, including links to monitor deployment progress.
 
 **Step 8.** For private projects, add a github deployment key in github, and include that in your project's settings as shown above. Otherwise `stagecoach2` won't be able to deploy your project.
@@ -72,6 +70,22 @@ https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-creat
 **Step 9.** Push any trivial change to your project to verify success. Deployment details will appear in the Slack channel associated with the Slack webhook you created.
 
 > "What if I don't use Slack?" Tip: Slack webhooks expect a JSON-encoded POST with a "text" property. You can create your own adapter for your own reporting service.
+
+## Deploying your project when a module is updated
+
+Sometimes projects and npm modules are developed in tandem, or a project is intended as a proving ground for a module. In this situation, it can be helpful to have a test environment where the project depends on the main github branch of the module, and the project is redeployed when *either the module or the project changes.*
+
+If you are interested in the same branch name for the module and the project, this is no problem. Just add the webhook URL to both repositories and you're done.
+
+However, if you are watching the `develop` branch of your project and the `main` branch of your module, you'll need a way to remap the branch name so that stagecoach understands it should deploy the project.
+
+You can do that by adding a `map` query parameter to the webhook *only when adding it to the module's repository,* like this:
+
+```
+https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-create&map[develop]=main
+```
+
+In this example `develop` is the project branch name we are deploying, while `main` is the module branch name that should trigger that.
 
 ## For users of stagecoach classic
 
