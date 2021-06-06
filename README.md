@@ -79,13 +79,13 @@ If you are interested in the same branch name for the module and the project, th
 
 However, if you are watching the `develop` branch of your project and the `main` branch of your module, you'll need a way to remap the branch name so that stagecoach understands it should deploy the project.
 
-You can do that by adding a `map` query parameter to the webhook *only when adding it to the module's repository,* like this:
+You can do that by adding a `trigger` query parameter to the webhook *only when adding it to the module's repository,* like this:
 
 ```
-https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-create&map[develop]=main
+https://your-site.com/stagecoach/deploy/project-name/develop?key=password-you-create&trigger=main
 ```
 
-In this example `develop` is the project branch name we are deploying, while `main` is the module branch name that should trigger that.
+In this example, the branch of our project being deployed is `develop`, but it is triggered by a push to the `main` branch of our module.
 
 ## For users of stagecoach classic
 

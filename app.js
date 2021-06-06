@@ -81,10 +81,10 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
     ...project.branches[branchName],
     name: branchName
   };
-  let expectedGithubBranchName = branchName || (req.query.map && req.query.map[branchName]);
+  const expectedGithubBranchName = req.query.trigger || branchName;
   if (req.body.ref !== `refs/heads/${expectedGithubBranchName}`) {
     console.log(`ignoring push for ${req.body.ref}, expected ${expectedGithubBranchName}`);
-    return res.send('Thanks but no branch matching that ref is configured for deploymentThanks but this is a push to a branch we are not watching');
+    return res.send(`ignoring push for ${req.body.ref}, expected ${expectedGithubBranchName}`);
   } else {
     console.log(`accepted push for ${req.body.ref}, which matches ${expectedGithubBranchName}`);
   }
