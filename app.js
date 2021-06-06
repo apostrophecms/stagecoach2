@@ -242,12 +242,10 @@ async function deploy(project, branch, timestamp, logName) {
     console.log(`|| F: ${deployTo} C: ${current}`);
     await fs.symlink(deployTo, current, 'dir');
     await spawnScriptInCurrent('deployment/start');
-    log.write('Ran start\n');
     const deploymentsList = fs.readdirSync(deployments).sort();
-    console.log('Deployments list:', deploymentsList);
     if (deploymentsList.length > keep) {
+      console.log(`Removing ${deploymentList.length - keep} older deployments, keeping ${keep}`);
       for (let i = 0; (i < deploymentsList.length - keep); i++) {
-        const remove = `${deployments}/${deployments + '/' + deploymentsList[i]}`;
         console.log(`Removing ${remove}`);
         await fs.remove(remove);
       }
