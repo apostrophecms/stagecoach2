@@ -210,6 +210,7 @@ async function deploy(project, branch, timestamp, logName) {
     await fs.remove(current);
     unlinked = true;
     log.write('Running start...\n');
+    console.log(`|| F: ${deployTo} C: ${current}`);
     await fs.symlink(deployTo, current, 'dir');
     await spawnScriptInCurrent('deployment/start');
     log.write('Ran start\n');
@@ -222,12 +223,14 @@ async function deploy(project, branch, timestamp, logName) {
     log.write('Deployment complete!');
   } catch (e) {
     if (log) {
-      log.write('Error on deployment:\n', e);
+      log.write('Error on deployment:\n');
+      log.write(e + '\n');
     }
     console.error(e);
     if (unlinked) {
       log.write('Relinking previous deployment\n');
       await fs.remove(current);
+      console.log(`<< F: ${former} C: ${current}`);
       await fs.symlink(former, current, 'dir');
     }
     await fs.remove(deployTo);
