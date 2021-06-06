@@ -30,7 +30,7 @@ readConfig();
 
 const root = config.root || '/opt/stagecoach';
 
-fs.mkdirpSync(`${root}/deployment-logs`);
+fs.mkdirpSync(`${root}/logs/deployment`);
 
 app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   const host = req.get('Host');
@@ -68,10 +68,10 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   res.send('deploying');
   // Wait one second before we tell Slack where the logs are, in case they are not ready yet
   setTimeout(function() {
-    slack(project, branch, `Starting deployment to ${branch.name}, you may view and refresh logs at https://${host}/stagecoach/deployment-logs/${logName}`);
+    slack(project, branch, `Starting deployment to ${branch.name}, you may view and refresh logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   }, 1000);
-  // Make sure stdout and stderr go to the same place so we can pipe easily
-  const lockFile = `${root}/deploy.lock`;
+  fs.mkdirpSync(`${root}/locks`);
+  const lockFile = `${root}/locks/deploy.lock`;
   let locked;
   try {
     deploying++;
@@ -81,10 +81,10 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
     locked = true;
     console.log('calling deploy');
     await deploy(project, branch, timestamp, logName);
-    slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
+    slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   } catch (e) {
     console.error(e);
-    slack(project, branch, `⚠️ Deployment to ${branch.name} FAILED with error code ${e.code || e}, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
+    slack(project, branch, `⚠️ Deployment to ${branch.name} FAILED with error code ${e.code || e}, you may view the logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   } finally {
     if (locked) {
       await unlock(lockFile);
@@ -97,8 +97,11 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   }
 });
 
-app.get('/stagecoach/deployment-logs/:file', function (req, res) {
-  const path = `${root}/deployment-logs/${req.params.file}`;
+app.get('/stagecoach/logs/*', function (req, res) {
+  const path = `${root}/logs/${req.params[0]}`;
+  if (path.match(/\.\./)) {
+    return res.status(400).send('invalid');
+  }
   return res.sendFile(path);
 });
 
@@ -144,7 +147,7 @@ async function server() {
 
 async function deploy(project, branch, timestamp, logName) {
   console.log('in deploy');
-  const logFile = `${root}/deployment-logs/${logName}`;
+  const logFile = `${root}/logs/deployment/${logName}`;
   const shortName = branch.shortName || project.shortName || project.name;
   const dir = `${root}/apps/${shortName}`;
   await fs.mkdirpSync(dir);

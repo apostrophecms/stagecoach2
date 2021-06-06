@@ -80,3 +80,5 @@ https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-creat
 `stagecoach2` can be used as a drop-in replacement for stagecoach classic, eliminating the need to type `sc-deploy`. You can even continue to use `stagecoach` temporarily while transitioning to git push-based deployment with `stagecoach2`.
 
 Some use cases of stagecoach classic, such as rollbacks or restarts, are not covered in the same way by `stagecoach2`. You can roll back by deploying a previous commit. There is currently no convenience feature for restarts, but you can force a new deployment by accessing your webhook URL.
+
+If you are using stagecoach classic then your root `/opt/stagecoach` folder will probably belong to root. You don't have to change that, but you'll have to create `/opt/stagecoach/locks` and `/opt/stagecoach/logs` and give them to your non-root Node.js user (`nodeapps` in our examples), since `stagecoach` won't be able to create them on its own.
