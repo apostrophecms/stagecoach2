@@ -251,6 +251,7 @@ async function deploy(project, branch, timestamp, logName) {
       },
       ...options
     };
+    console.log('>>>', options);
     const child = cp.spawn(cmd, args, options);
     return new Promise((resolve, reject) => {
       child.on('close', () => resolve(null));
