@@ -336,7 +336,7 @@ async function deploy(project, branch, timestamp, logName) {
   }
 
   async function logCommitId() {
-    await spawnInCheckout('git', [ 'rev-parse' ], 'HEAD');
+    await spawnInCheckout('git', [ 'rev-parse', 'HEAD' ]);
   }
 
 }
