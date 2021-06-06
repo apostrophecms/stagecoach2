@@ -296,8 +296,7 @@ async function deploy(project, branch, timestamp, logName) {
   async function spawnScriptInCurrent(script) {
     // We can't use the cwd option of spawn because node always resolves
     // it to an absolute path, so do it another way
-    const command = `bash -c '(cd ${quote([current])} && bash ${quote([script])})'`;
-    return spawn(command, [], {});
+    return spawn('bash', [ '-c', `(cd ${quote([current])} && bash ${quote([script])})` ], {});
   }
 
   function existsInCurrent(path) {
