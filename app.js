@@ -244,7 +244,7 @@ async function deploy(project, branch, timestamp, logName) {
     await spawnScriptInCurrent('deployment/start');
     const deploymentsList = fs.readdirSync(deployments).sort();
     if (deploymentsList.length > keep) {
-      console.log(`Removing ${deploymentList.length - keep} older deployments, keeping ${keep}`);
+      console.log(`Removing ${deploymentsList.length - keep} older deployments, keeping ${keep}`);
       for (let i = 0; (i < deploymentsList.length - keep); i++) {
         console.log(`Removing ${remove}`);
         await fs.remove(remove);
