@@ -126,7 +126,7 @@ app.get('/stagecoach/logs/*', function (req, res) {
   if (path.match(/\.\./)) {
     return res.status(400).send('invalid');
   }
-  if (path.match(/\.\w+$/)) {
+  if (!path.match(/\.log$/)) {
     return res.status(404).send('not found');
   }
   return res.send(`
