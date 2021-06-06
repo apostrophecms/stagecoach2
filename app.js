@@ -87,7 +87,7 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
       await unlock(lockFile);
     }
     deploying--;
-    if (exitAfterDeploying && (deploying === 0)) {
+    if (exitAfterDeploy && (deploying === 0)) {
       console.log('Exiting to enable restart with newly installed version of stagecoach');
       process.exit(0);
     }
