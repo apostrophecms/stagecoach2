@@ -157,7 +157,7 @@ async function deploy(project, branch, timestamp, logName) {
   try {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
     log = await createWriteStream(logFile);
-    log.write('spawning pwd in current');
+    log.write('spawning pwd in current\n');
     await spawnInCurrent('pwd');
     return;
     if (fs.existsSync(checkout)) {
@@ -247,11 +247,11 @@ async function deploy(project, branch, timestamp, logName) {
   function spawn(cmd, args = [], options = {}) {
     options = {
       ...{
-        stdio: [ 'pipe', log, log ]
+        stdio: [ 'pipe', log, log ],
+        shell: true
       },
       ...options
     };
-    console.log('>>>', options);
     const child = cp.spawn(cmd, args, options);
     return new Promise((resolve, reject) => {
       child.on('close', () => resolve(null));
