@@ -186,6 +186,8 @@ async function deploy(project, branch, timestamp, logName) {
     if (fs.existsSync(checkout)) {
       try {
         await spawnInCheckout('git', [ 'pull' ]);
+        log.write('Deploying commit: ');
+        await spawn('git', [ 'rev-parse' ], 'HEAD');
         if (beforeConnecting) {
           await spawnInCheckout('npm', [ 'install' ]);
         }
@@ -197,6 +199,8 @@ async function deploy(project, branch, timestamp, logName) {
     }
     if (!updated) {
       await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ]);
+      log.write('Deploying commit: ');
+      await spawn('git', [ 'rev-parse' ], 'HEAD');
       if (beforeConnecting) {
         await spawnInCheckout('npm', [ 'install' ]);
       }
@@ -240,9 +244,12 @@ async function deploy(project, branch, timestamp, logName) {
     await spawnScriptInCurrent('deployment/start');
     log.write('Ran start\n');
     const deploymentsList = fs.readdirSync(deployments).sort();
+    console.log('Deployments list:', deploymentsList);
     if (deploymentsList.length > keep) {
       for (let i = 0; (i < deploymentsList.length - keep); i++) {
-        await fs.remove(`${deployments}/${deployments + '/' + deploymentsList[i]}`);
+        const remove = `${deployments}/${deployments + '/' + deploymentsList[i]}`;
+        console.log(`Removing ${remove}`);
+        await fs.remove(remove);
       }
     }
     log.write('Deployment complete!');
