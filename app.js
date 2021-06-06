@@ -119,12 +119,73 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   }
 });
 
+app.use('/stagecoach/logs', express.static(`${root}/logs`));
+
 app.get('/stagecoach/logs/*', function (req, res) {
   const path = `${root}/logs/${req.params[0]}`;
   if (path.match(/\.\./)) {
     return res.status(400).send('invalid');
   }
-  return res.sendFile(path);
+  if (path.match(/\.\w+$/)) {
+    return res.status(404).send('not found');
+  }
+  return res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #log {
+      background-color: black;
+      color: #8f8;
+      font-family: Monaco, monospace;
+      font-size: 16px;
+      max-width: 1140px;
+      margin: auto;
+      overflow: scroll;
+      padding: 1em;
+    }
+  </style>
+</head>
+<body>
+  <pre id="log">
+    Connecting...
+  </pre>
+  <script>
+    (() => {
+      setTimeout(update, 2500);
+      async function update() {
+        const url = location.href;
+        const log = document.querySelector('#log');
+        let finished = false;
+        let response;
+        try {
+          response = await fetch(url + '.txt');
+          if (response.status === 404) {
+            response = await fetch(url + '.final.txt');
+            if (response.status < 400) {
+              finished = true;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+          setTimeout(update, 5000);
+          return;
+        }
+        const text = await response.text();
+        let atBottom = ((window.innerHeight + window.scrollY) >= document.body.scrollHeight);
+        log.innerText = text;
+        if (atBottom) {
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+        if (!finished) {
+          setTimeout(update, 2500);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
+`.trim());
 });
 
 if (argv._[0] === 'install') {
@@ -168,7 +229,7 @@ async function server() {
 }
 
 async function deploy(project, branch, timestamp, logName) {
-  const logFile = `${root}/logs/deployment/${logName}`;
+  const logFile = `${root}/logs/deployment/${logName}.txt`;
   const shortName = branch.shortName || project.shortName || project.name;
   const dir = `${root}/apps/${shortName}`;
   await fs.mkdirpSync(dir);
@@ -272,6 +333,7 @@ async function deploy(project, branch, timestamp, logName) {
   } finally {
     if (log) {
       await log.close();
+      await fs.rename(logFile, logFile.replace('.txt', '.final.txt'));
     }
   }
 
