@@ -48,8 +48,6 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   if (!req.query.key) {
     return res.status(400).send('missing key query parameter');
   }
-  console.log(project);
-  console.log(req.query.key, project.key);
   if (req.query.key !== project.key) {
     return res.status(403).send('incorrect key');
   }
@@ -66,6 +64,7 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   };
   const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
   const logName = `${timestamp}.log`;
+  console.log(`logName is ${logName}`);
   res.send('deploying');
   // Wait one second before we tell Slack where the logs are, in case they are not ready yet
   setTimeout(function() {
@@ -76,8 +75,11 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   let locked;
   try {
     deploying++;
+    console.log('locking');
     await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
+    console.log('locked');
     locked = true;
+    console.log('calling deploy');
     await deploy(project, branch, timestamp, logName);
     slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
   } catch (e) {
