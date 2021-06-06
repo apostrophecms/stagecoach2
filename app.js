@@ -291,12 +291,6 @@ async function deploy(project, branch, timestamp, logName) {
   // the path name to be part of a stable forever id, even though the
   // target of "current" changes
   async function spawnScriptInCurrent(script) {
-    options = {
-      ...{
-        cwd: current
-      },
-      ...options
-    };
     // We can't use the cwd option of spawn because node always resolves
     // it to an absolute path, so do it another way
     const command = `bash -c '(cd ${quote([current])} && bash ${quote([script])})'`;
