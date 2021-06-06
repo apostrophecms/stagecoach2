@@ -335,6 +335,10 @@ async function deploy(project, branch, timestamp, logName) {
     return fs.existsSync(`${current}/${path}`);
   }
 
+  async function logCommitId() {
+    await spawnInCheckout('git', [ 'rev-parse' ], 'HEAD');
+  }
+
 }
 
 function slack(project, branch, text) {
@@ -375,8 +379,4 @@ async function listen(port) {
 
 function readConfig() {
   config = JSON.parse(fs.readFileSync(configFile, 'utf8')); 
-}
-
-async function logCommitId() {
-  await spawnInCheckout('git', [ 'rev-parse' ], 'HEAD');
 }
