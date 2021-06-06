@@ -246,6 +246,7 @@ async function deploy(project, branch, timestamp, logName) {
     if (deploymentsList.length > keep) {
       console.log(`Removing ${deploymentsList.length - keep} older deployments, keeping ${keep}`);
       for (let i = 0; (i < deploymentsList.length - keep); i++) {
+        const remove = deploymentsList[i];
         console.log(`Removing ${remove}`);
         await fs.remove(remove);
       }
