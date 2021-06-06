@@ -53,7 +53,7 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   if (!host) {
     return res.status(400).send('missing Host header');
   }
-  if (req.body.action !== 'push') {
+  if (!req.body.ref) {
     return res.send('Thanks but I only care about push events');
   }
   if (!has(config.projects, req.params.project)) {
