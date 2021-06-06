@@ -6,6 +6,7 @@ const fetch = require('node-fetch');
 const util = require('util');
 const cp = require('child_process');
 const lockfile = require('lockfile');
+const quote = require('shell-quote').quote;
 
 const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
@@ -157,9 +158,6 @@ async function deploy(project, branch, timestamp, logName) {
   try {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
     log = await createWriteStream(logFile);
-    log.write('spawning pwd in current\n');
-    await spawnInCurrent('pwd');
-    return;
     if (fs.existsSync(checkout)) {
       try {
         await spawnInCheckout('git', [ 'pull' ]);
@@ -198,7 +196,7 @@ async function deploy(project, branch, timestamp, logName) {
     if (fs.existsSync(current)) {
       try {
         log.write('Stopping old deployment...\n');
-        await spawnInCurrent('bash', [ 'deployment/stop' ]);
+        await spawnScriptInCurrent('deployment/stop');
         stopped = true;
       } catch (e) {
         console.warn('🤔 cannot stop current deployment, that may be OK');
@@ -213,7 +211,7 @@ async function deploy(project, branch, timestamp, logName) {
     unlinked = true;
     log.write('Running start...\n');
     await fs.symlink(deployTo, current, 'dir');
-    await spawnInCurrent('bash', [ 'deployment/start' ]);
+    await spawnScriptInCurrent('deployment/start');
     log.write('Ran start\n');
     const deploymentsList = fs.readdirSync(deployments).sort();
     if (deploymentsList.length > keep) {
@@ -234,7 +232,7 @@ async function deploy(project, branch, timestamp, logName) {
     }
     await fs.remove(deployTo);
     if (stopped) {
-      await spawnInCurrent('bash', [ 'deployment/start' ]);
+      await spawnScriptInCurrent('deployment/start');
     }
     throw e;
   } finally {
@@ -247,8 +245,7 @@ async function deploy(project, branch, timestamp, logName) {
   function spawn(cmd, args = [], options = {}) {
     options = {
       ...{
-        stdio: [ 'pipe', log, log ],
-        shell: true
+        stdio: [ 'pipe', log, log ]
       },
       ...options
     };
@@ -287,15 +284,23 @@ async function deploy(project, branch, timestamp, logName) {
     return fs.existsSync(`${deployTo}/${path}`);
   }
 
-  async function spawnInCurrent(cmd, args = [], options = {}) {
-    console.log(`>> ${current}`);
+  // Run a specific bash shell script, with no arguments, with the current
+  // working directory set to ${project}/current, but
+  // without resolving cwd to an absolute path. This is useful to scripts
+  // like legacy forever-based "stop" and "start" scripts that want
+  // the path name to be part of a stable forever id, even though the
+  // target of "current" changes
+  async function spawnScriptInCurrent(script) {
     options = {
       ...{
         cwd: current
       },
       ...options
     };
-    return spawn(cmd, args, options);
+    // We can't use the cwd option of spawn because node always resolves
+    // it to an absolute path, so do it another way
+    const command = `bash -c '(cd ${quote([current])} && bash ${quote([script])})'`;
+    return spawn(command, [], {});
   }
 
   function existsInCurrent(path) {
