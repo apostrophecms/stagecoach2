@@ -187,7 +187,7 @@ async function deploy(project, branch, timestamp, logName) {
       try {
         await spawnInCheckout('git', [ 'pull' ]);
         log.write('Deploying commit: ');
-        await spawn('git', [ 'rev-parse' ], 'HEAD');
+        await logCommitId();
         if (beforeConnecting) {
           await spawnInCheckout('npm', [ 'install' ]);
         }
@@ -200,7 +200,7 @@ async function deploy(project, branch, timestamp, logName) {
     if (!updated) {
       await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ]);
       log.write('Deploying commit: ');
-      await spawn('git', [ 'rev-parse' ], 'HEAD');
+      await logCommitId();
       if (beforeConnecting) {
         await spawnInCheckout('npm', [ 'install' ]);
       }
@@ -375,4 +375,8 @@ async function listen(port) {
 
 function readConfig() {
   config = JSON.parse(fs.readFileSync(configFile, 'utf8')); 
+}
+
+async function logCommitId() {
+  await spawnInCheckout('git', [ 'rev-parse' ], 'HEAD');
 }
