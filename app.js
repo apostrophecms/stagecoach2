@@ -140,6 +140,7 @@ async function server() {
 }
 
 async function deploy(project, branch, timestamp, logName) {
+  console.log('in deploy');
   const logFile = `${root}/deployment-logs/${logName}`;
   const shortName = branch.shortName || project.shortName || project.name;
   const dir = `${root}/apps/${shortName}`;
@@ -154,7 +155,9 @@ async function deploy(project, branch, timestamp, logName) {
   let updated = false;
   try {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
+    console.log('creating stream');
     log = await createWriteStream(logFile);
+    console.log('after creating stream');
     if (fs.existsSync(checkout)) {
       try {
         await spawnInCheckout('git', [ 'pull' ]);
