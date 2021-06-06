@@ -53,6 +53,9 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   if (!host) {
     return res.status(400).send('missing Host header');
   }
+  if (req.body.action !== 'push') {
+    return res.send('Thanks but I only care about push events');
+  }
   if (!has(config.projects, req.params.project)) {
     return res.status(404).send('no such project');
   }
@@ -72,7 +75,7 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
     return res.status(400).send('missing branch portion of URL');
   }
   if (!has(project.branches, branchName)) {
-    return res.status(404).send('no branch by that name configured for deployment');
+    return res.send('Thanks but no branch by that name is configured for deployment');
   }
   const branch = {
     ...project.branches[branchName],
@@ -81,7 +84,7 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   let expectedGithubBranchName = branchName || (req.query.map && req.query.map[branchName]);
   if (req.body.ref !== `refs/heads/${expectedGithubBranchName}`) {
     console.log(`ignoring push for ${req.body.ref}, expected ${expectedGithubBranchName}`);
-    return res.send('not interested');
+    return res.send('Thanks but no branch matching that ref is configured for deploymentThanks but this is a push to a branch we are not watching');
   } else {
     console.log(`accepted push for ${req.body.ref}, which matches ${expectedGithubBranchName}`);
   }
