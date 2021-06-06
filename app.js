@@ -83,6 +83,7 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
     await deploy(project, branch, timestamp, logName);
     slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
   } catch (e) {
+    console.error(e);
     slack(project, branch, `⚠️ Deployment to ${branch.name} FAILED with error code ${e.code || e}, you may view the logs at https://${host}/stagecoach/deployment-logs/${logName}`);
   } finally {
     if (locked) {
