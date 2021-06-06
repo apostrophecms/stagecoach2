@@ -64,7 +64,6 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   };
   const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
   const logName = `${timestamp}.log`;
-  console.log(`logName is ${logName}`);
   res.send('deploying');
   // Wait one second before we tell Slack where the logs are, in case they are not ready yet
   setTimeout(function() {
@@ -75,11 +74,8 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
   let locked;
   try {
     deploying++;
-    console.log('locking');
     await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
-    console.log('locked');
     locked = true;
-    console.log('calling deploy');
     await deploy(project, branch, timestamp, logName);
     slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   } catch (e) {
@@ -146,7 +142,6 @@ async function server() {
 }
 
 async function deploy(project, branch, timestamp, logName) {
-  console.log('in deploy');
   const logFile = `${root}/logs/deployment/${logName}`;
   const shortName = branch.shortName || project.shortName || project.name;
   const dir = `${root}/apps/${shortName}`;
@@ -159,11 +154,12 @@ async function deploy(project, branch, timestamp, logName) {
   let former;
   let log;
   let updated = false;
+  log.write('spawning pwd in current');
+  await spawnInCurrent('pwd');
+  return;
   try {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
-    console.log('creating stream');
     log = await createWriteStream(logFile);
-    console.log('after creating stream');
     if (fs.existsSync(checkout)) {
       try {
         await spawnInCheckout('git', [ 'pull' ]);
@@ -255,7 +251,6 @@ async function deploy(project, branch, timestamp, logName) {
       },
       ...options
     };
-    console.log('>>>', cmd, args);
     const child = cp.spawn(cmd, args, options);
     return new Promise((resolve, reject) => {
       child.on('close', () => resolve(null));
@@ -292,6 +287,7 @@ async function deploy(project, branch, timestamp, logName) {
   }
 
   async function spawnInCurrent(cmd, args = [], options = {}) {
+    console.log(`>> ${current}`);
     options = {
       ...{
         cwd: current
