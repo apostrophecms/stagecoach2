@@ -158,8 +158,8 @@ async function deploy(project, branch, timestamp, logName) {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
     log = await createWriteStream(logFile);
     log.write('spawning pwd in current');
-    return;
     await spawnInCurrent('pwd');
+    return;
     if (fs.existsSync(checkout)) {
       try {
         await spawnInCheckout('git', [ 'pull' ]);
