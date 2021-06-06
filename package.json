@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/apostrophecms/stagecoach2",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "boring": "^1.1.1",
     "dayjs": "^1.10.5",
     "express": "^4.17.1",

@@ -1,5 +1,4 @@
 const express = require('express');
-const app = express();
 const fs = require('fs-extra');
 const dayjs = require('dayjs');
 const fetch = require('node-fetch');
@@ -10,6 +9,11 @@ const quote = require('shell-quote').quote;
 
 const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
+
+const app = express();
+// Accept either format that github can be configured to send
+app.use(require('body-parser').json({ limit: '10mb' }));
+app.use(require('body-parser').urlencoded({ extended: true, limit: '10mb' }));
 
 const argv = require('boring')();
 const configFile = process.env.CONFIG || '/usr/local/etc/stagecoach.json';
@@ -33,8 +37,19 @@ const root = config.root || '/opt/stagecoach';
 
 fs.mkdirpSync(`${root}/logs/deployment`);
 
-app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
+app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   const host = req.get('Host');
+  if (req.body.payload) {
+    // urlencoded option for a github webhook is just JSON encoded
+    // inside a "payload" parameter
+    try {
+      req.body = JSON.parse(req.body.payload);
+    } catch (e) {
+      if (e) {
+        return res.status(400).send('payload POST parameter is not JSON encoded');
+      }
+    }
+  }
   if (!host) {
     return res.status(400).send('missing Host header');
   }
@@ -63,6 +78,13 @@ app.all('/stagecoach/deploy/:project/:branch', async (req, res) => {
     ...project.branches[branchName],
     name: branchName
   };
+  let expectedGithubBranchName = branchName || (req.query.map && req.query.map[branchName]);
+  if (req.body.ref !== `refs/heads/${expectedGithubBranchName}`) {
+    console.log(`ignoring push for ${req.body.ref}, expected ${expectedGithubBranchName}`);
+    return res.send('not interested');
+  } else {
+    console.log(`accepted push for ${req.body.ref}, which matches ${expectedGithubBranchName}`);
+  }
   const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
   const logName = `${timestamp}.log`;
   res.send('deploying');
