@@ -87,6 +87,24 @@ https://your-site.com/stagecoach/deploy/project-name/develop?key=password-you-cr
 
 In this example, the branch of our project being deployed is `develop`, but it is triggered by a push to the `main` branch of our module.
 
+## Deploying from the command line of the server
+
+Usually you'll deploy via `git push`, but you can simulate a github webhook deployment event using the `deploy` command:
+
+```
+stagecoach deploy projectName branchName
+```
+
+This is mainly useful for testing.
+
+If you use this feature, you must set the `baseUrl` option for each branch, or for each project, in `/usr/local/etc/stagecoach.json`. This is the portion of the URL before `/stagecoach`. For instance, in a local test environment, it might be:
+
+```
+http://localhost:4000
+```
+
+The baseUrl setting is only useful if the `deploy` command will be used. If you don't use it, deployment will still work, but you will not get useful monitoring links in slack.
+
 ## For users of stagecoach classic
 
 > This module is unrelated to substack's "stagecoach" npm module, which was published once and never updated 10 years ago. "Stagecoach classic" refers to the [bash-based deployment system](https://github.com/apostrophecms/stagecoach) created at P'unk Avenue and ApostropheCMS.

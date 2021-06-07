@@ -6,6 +6,7 @@ const util = require('util');
 const cp = require('child_process');
 const lockfile = require('lockfile');
 const quote = require('shell-quote').quote;
+const qs = require('qs');
 
 const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
@@ -38,6 +39,7 @@ const root = config.root || '/opt/stagecoach';
 fs.mkdirpSync(`${root}/logs/deployment`);
 
 app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
+  console.log(req.params);
   const host = req.get('Host');
   if (req.body.payload) {
     // urlencoded option for a github webhook is just JSON encoded
@@ -189,6 +191,16 @@ app.get('/stagecoach/logs/*', function (req, res) {
 });
 
 if (argv._[0] === 'install') {
+  install();
+} else if (argv._[0] === 'deploy') {
+  simulateWebhook();
+} else if (argv._[0]) {
+  usage();
+} else {
+  server();
+}
+
+function install() {
   console.log('Installing via cron');
   let crontab = '';
   try {
@@ -209,8 +221,28 @@ if (argv._[0] === 'install') {
     child.stdin.write(crontab);
     child.stdin.end();
   }
-} else {
-  server();
+}
+
+// Send a simulated github webhook to trigger a deployment via the CLI
+
+async function simulateWebhook() {
+  const project = config.projects[argv._[1]] || usage();
+  const branch = config.projects[argv._[1]].branches[argv._[2]] || usage();
+  const response = await fetch(`${branch.baseUrl || project.baseUrl}/stagecoach/deploy/${argv._[1]}/${argv._[2]}?` + qs.stringify({
+    key: project.key
+  }), {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      ref: `refs/heads/${argv._[2]}`
+    })
+  });
+  console.log(await response.text());
+  if (response.status >= 400) {
+    process.exit(response.status);
+  }
 }
 
 async function server() {
@@ -347,8 +379,14 @@ async function deploy(project, branch, timestamp, logName) {
     };
     const child = cp.spawn(cmd, args, options);
     return new Promise((resolve, reject) => {
-      child.on('close', () => resolve(null));
-      child.on('error', (e) => reject(e));
+      child.on('close', code => {
+        if (code) {
+          return reject(code);
+        } else {
+          return resolve(null);
+        }
+      });
+      child.on('error', e => reject(e));
     });
   }
 
@@ -440,4 +478,21 @@ async function listen(port) {
 
 function readConfig() {
   config = JSON.parse(fs.readFileSync(configFile, 'utf8')); 
+}
+
+function usage() {
+  console.error(`
+Usage: stagecoach [command] [arguments]
+
+With no command specified, this command will listen for connections as a stagecoach
+deployment server.
+
+"stagecoach install" will install a cron job to ensure such a deployment server
+is running at all times. It will start up within one minute after installing
+the cron job.
+
+"stagecoach deploy projectName branchName" will trigger a deployment by sending
+a simulated github push webhook. This is mainly for testing.
+  `.trim());
+  process.exit(1);
 }
