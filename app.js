@@ -38,6 +38,10 @@ const root = config.root || '/opt/stagecoach';
 
 fs.mkdirpSync(`${root}/logs/deployment`);
 
+app.get('/stagecoach', async (req, res) => {
+  const processes = await getProcesses();
+});
+
 app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   console.log(req.params);
   const host = req.get('Host');
@@ -122,6 +126,39 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
 });
 
 app.use('/stagecoach/logs', express.static(`${root}/logs`));
+
+app.get('/stagecoach/console/:shortName/:n', (req, res) => {
+  const shortName = req.params.shortName;
+  if (!fs.existsSync(`/opt/stagecoach/apps/${shortName}`)) {
+    return res.status(404).send('not found');
+  }
+  let foreverOutput, pm2Output;
+  try {
+    foreverOutput = cp.execSync('forever logs', { encoding: 'utf8' });
+  } catch (e) {
+    // Not installed, that's OK
+  }
+  try {
+    pm2Output = cp.execSync('pm2 list', { encoding: 'utf8' });
+  } catch (e) {
+    // Not installed, that's OK
+  }
+  let choices;
+  const foreverRelevant = foreverOutput.split('\n').filter(line => line.includes(`/${shortName}/`));
+  if (foreverRelevant.length) {
+    choices = foreverRelevant.map(line => {
+      const matches = line.match(/(\[\d+\]).*?(\S+\.log)/);
+      return matches && {
+        id: matches[1],
+        logFile: matches[2],
+        source: 'forever'
+      };
+    }).filter(log => !!log).map(logFile => ({
+      logFile,
+      source: 'forever'
+    }));
+  }
+});
 
 app.get('/stagecoach/logs/*', function (req, res) {
   const path = `${root}/logs/${req.params[0]}`;
@@ -495,4 +532,42 @@ the cron job.
 a simulated github push webhook. This is mainly for testing.
   `.trim());
   process.exit(1);
+}
+
+async function getProcesses() {
+  let foreverOutput, pm2Output;
+  try {
+    foreverOutput = await exec('forever logs', { encoding: 'utf8' });
+  } catch (e) {
+    // Not installed, that's OK
+  }
+  try {
+    pm2Output = JSON.parse(await exec('pm2 jlist', { encoding: 'utf8' }));
+  } catch (e) {
+    // Not installed, that's OK
+  }
+  let choices;
+  const foreverRelevant = foreverOutput.split('\n').filter(line => line.includes('/opt/stagecoach/apps'));
+  if (foreverRelevant.length) {
+    choices = foreverRelevant.map(line => {
+      const matches = line.match(/(\[\d+\]).*?\/opt\/stagecoach\/apps(^\/)/);
+      return matches && {
+        id: matches[1],
+        shortName: matches[2],
+        source: 'forever'
+      };
+    }).filter(log => !!log);
+  }
+  const pm2Relevant = pm2Output.map(entry => {
+    return {
+      id: entry.pm_id,
+      shortName: entry.name.replace(/-\d+/, ''),
+      source: 'pm2'
+    };
+  });
+}
+
+async function exec(cmd, options) {
+  const pexec = require('util').promisify(cp.exec);
+  return (await pexec(cmd, options)).stdout;
 }
