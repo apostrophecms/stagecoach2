@@ -7,7 +7,7 @@ const cp = require('child_process');
 const lockfile = require('lockfile');
 const quote = require('shell-quote').quote;
 const qs = require('qs');
-
+import { html, safeHtml } from 'common-tags';
 const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
 
@@ -40,6 +40,35 @@ fs.mkdirpSync(`${root}/logs/deployment`);
 
 app.get('/stagecoach', async (req, res) => {
   const processes = await getProcesses();
+  return res.send(html`
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+  </style>
+</head>
+<body>
+  <table>
+    <tr>
+      <th>Name</th><th>Output Log</th><th>Error Log</th>
+    </tr>
+    ${processes.map(process => safeHtml`
+      <tr>
+        <td>${process.name}</td><td>${process.output}</td><td>${process.errors}</td>
+      </tr>
+    `)}
+  </table>
+  <script>
+    (() => {
+      setTimeout(update, 30000);
+      function update() {
+        location.reload();
+      }
+    })();
+  </script>
+</body>
+</html>
+  `);
 });
 
 app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
@@ -127,39 +156,6 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
 
 app.use('/stagecoach/logs', express.static(`${root}/logs`));
 
-app.get('/stagecoach/console/:shortName/:n', (req, res) => {
-  const shortName = req.params.shortName;
-  if (!fs.existsSync(`/opt/stagecoach/apps/${shortName}`)) {
-    return res.status(404).send('not found');
-  }
-  let foreverOutput, pm2Output;
-  try {
-    foreverOutput = cp.execSync('forever logs', { encoding: 'utf8' });
-  } catch (e) {
-    // Not installed, that's OK
-  }
-  try {
-    pm2Output = cp.execSync('pm2 list', { encoding: 'utf8' });
-  } catch (e) {
-    // Not installed, that's OK
-  }
-  let choices;
-  const foreverRelevant = foreverOutput.split('\n').filter(line => line.includes(`/${shortName}/`));
-  if (foreverRelevant.length) {
-    choices = foreverRelevant.map(line => {
-      const matches = line.match(/(\[\d+\]).*?(\S+\.log)/);
-      return matches && {
-        id: matches[1],
-        logFile: matches[2],
-        source: 'forever'
-      };
-    }).filter(log => !!log).map(logFile => ({
-      logFile,
-      source: 'forever'
-    }));
-  }
-});
-
 app.get('/stagecoach/logs/*', function (req, res) {
   const path = `${root}/logs/${req.params[0]}`;
   if (path.match(/\.\./)) {
@@ -224,7 +220,7 @@ app.get('/stagecoach/logs/*', function (req, res) {
   </script>
 </body>
 </html>
-`.trim());
+  `.trim());
 });
 
 if (argv._[0] === 'install') {
@@ -546,25 +542,29 @@ async function getProcesses() {
   } catch (e) {
     // Not installed, that's OK
   }
-  let choices;
+  let choices = [];
   const foreverRelevant = foreverOutput.split('\n').filter(line => line.includes('/opt/stagecoach/apps'));
   if (foreverRelevant.length) {
     choices = foreverRelevant.map(line => {
-      const matches = line.match(/(\[\d+\]).*?\/opt\/stagecoach\/apps(^\/)/);
+      const matches = line.match(/(\[\d+\]).*?\/opt\/stagecoach\/apps(^\/).*?\s+([^\S]+\.log)/);
       return matches && {
         id: matches[1],
         shortName: matches[2],
-        source: 'forever'
+        output: matches[3]
       };
     }).filter(log => !!log);
   }
-  const pm2Relevant = pm2Output.map(entry => {
+  choices = [ ...choices, pm2Output.map(entry => {
     return {
       id: entry.pm_id,
       shortName: entry.name.replace(/-\d+/, ''),
-      source: 'pm2'
+      source: 'pm2',
+      output: entry.pm2_env.pm_out_log_path,
+      errors: entry.pm2_env.pm_err_log_path
     };
-  });
+  }) ];
+  choices.sort((c1, c2) => `${c1.shortName}.${c1.id}`.localeCompare(`${c2.shortName}.${c2.id}`));
+  return choices;
 }
 
 async function exec(cmd, options) {
