@@ -87,6 +87,10 @@ https://your-site.com/stagecoach/deploy/project-name/develop?key=password-you-cr
 
 In this example, the branch of our project being deployed is `develop`, but it is triggered by a push to the `main` branch of our module.
 
+## Ignoring `package-lock.json`
+
+To get the full benefit of deploying projects when modules are updated, you'll likely need to ignore the `package-lock.json` file when installing dependencies. To do that, you can set the `ignorePackageLock: true` option, either at the branch level or the project level.
+
 ## Deploying from the command line of the server
 
 Usually you'll deploy via `git push`, but you can simulate a github webhook deployment event using the `deploy` command:

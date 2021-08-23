@@ -278,6 +278,12 @@ async function deploy(project, branch, timestamp, logName) {
     log = await createWriteStream(logFile);
     if (fs.existsSync(checkout)) {
       try {
+        if (branch.ignorePackageLock || project.ignorePackageLock) {
+          const packageLock = `${checkout}/package-lock.json`;
+          if (fs.existsSync(packageLock)) {
+            fs.removeSync(packageLock);
+          }
+        }
         await spawnInCheckout('git', [ 'pull' ]);
         log.write('Deploying commit: ');
         await logCommitId();
