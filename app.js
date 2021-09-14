@@ -98,21 +98,13 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
     slack(project, branch, `Starting deployment to ${branch.name}, you may view and refresh logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   }, 1000);
   fs.mkdirpSync(`${root}/locks`);
-  const lockFile = `${root}/locks/deploy.lock`;
-  let locked;
   try {
-    deploying++;
-    await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
-    locked = true;
     await deploy(project, branch, timestamp, logName);
     slack(project, branch, `👍 Deployment to ${branch.name} SUCCESSFUL, you may view the logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   } catch (e) {
     console.error(e);
     slack(project, branch, `⚠️ Deployment to ${branch.name} FAILED with error code ${e.code || e}, you may view the logs at https://${host}/stagecoach/logs/deployment/${logName}`);
   } finally {
-    if (locked) {
-      await unlock(lockFile);
-    }
     deploying--;
     if (exitAfterDeploy && (deploying === 0)) {
       console.log('Exiting to enable restart with newly installed version of stagecoach');
@@ -261,6 +253,7 @@ async function server() {
 }
 
 async function deploy(project, branch, timestamp, logName) {
+  const lockFile = `${root}/locks/deploy.lock`;
   const logFile = `${root}/logs/deployment/${logName}.txt`;
   const shortName = branch.shortName || project.shortName || project.name;
   const dir = `${root}/apps/${shortName}`;
@@ -272,10 +265,16 @@ async function deploy(project, branch, timestamp, logName) {
   let unlinked = false;
   let former;
   let log;
+  let locked = false;
   let updated = false;
+  deploying++;
+  log = await createWriteStream(logFile);
+  log.write('Waiting for deployment lock...');
+  await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
+  locked = true;
+  log.write('Deployment lock obtained');
   try {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
-    log = await createWriteStream(logFile);
     if (fs.existsSync(checkout)) {
       try {
         if (branch.ignorePackageLock || project.ignorePackageLock) {
@@ -369,6 +368,9 @@ async function deploy(project, branch, timestamp, logName) {
     }
     throw e;
   } finally {
+    if (locked) {
+      await unlock(lockFile);
+    }
     if (log) {
       await log.close();
       await fs.rename(logFile, logFile.replace('.txt', '.final.txt'));
