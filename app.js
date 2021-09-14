@@ -7,7 +7,7 @@ const cp = require('child_process');
 const lockfile = require('lockfile');
 const quote = require('shell-quote').quote;
 const qs = require('qs');
-
+const sluggo = require('sluggo');
 const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
 
@@ -91,7 +91,7 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
     console.log(`accepted push for ${req.body.ref}, which matches ${expectedGithubBranchName}`);
   }
   const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
-  const logName = `${timestamp}.log`;
+  const logName = `${sluggo(project.name)}-${sluggo(branchName)}-${timestamp}.log`;
   res.send('deploying');
   // Wait one second before we tell Slack where the logs are, in case they are not ready yet
   setTimeout(function() {

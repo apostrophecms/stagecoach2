@@ -1,6 +1,6 @@
 {
   "name": "stagecoach2",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Deploy your projects to any Linux server with a simple \"git push\"",
   "repository": {
     "type": "git",
@@ -29,7 +29,8 @@
     "lockfile": "^1.0.4",
     "node-fetch": "^2.6.1",
     "qs": "^6.10.1",
-    "shell-quote": "^1.7.2"
+    "shell-quote": "^1.7.2",
+    "sluggo": "^0.3.1"
   },
   "bin": {
     "stagecoach": "./bin/stagecoach"
