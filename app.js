@@ -269,10 +269,10 @@ async function deploy(project, branch, timestamp, logName) {
   let updated = false;
   deploying++;
   log = await createWriteStream(logFile);
-  log.write('Waiting for deployment lock...');
+  log.write('Waiting for deployment lock...\n');
   await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
   locked = true;
-  log.write('Deployment lock obtained');
+  log.write('Deployment lock obtained\n');
   try {
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
     if (fs.existsSync(checkout)) {
