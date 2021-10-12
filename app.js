@@ -84,6 +84,7 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
     ...project.branches[branchName],
     name: branchName
   };
+  
   const expectedGithubBranchName = req.query.trigger || branchName;
   if (req.body.ref !== `refs/heads/${expectedGithubBranchName}`) {
     console.log(`ignoring push for ${req.body.ref}, expected ${expectedGithubBranchName}`);
@@ -274,7 +275,23 @@ async function deploy(project, branch, timestamp, logName) {
   await lock(lockFile, { wait: 60 * 60 * 1000, stale: 59 * 60 * 1000 });
   locked = true;
   log.write('Deployment lock obtained\n');
+  let tempScript;
   try {
+    const gitSpawnOptions = {
+      env: {
+        ...process.env
+      }
+    };
+    if (project['ssh-key']) {
+      // Support git 1.x, which only has GIT_SSH, not GIT_SSH_COMMAND, so we
+      // have to build a temporary script
+      tempScript = `${os.homedir()}/${project.name}-connect`;
+      fs.writeFileSync(tempScript, `#!/bin/bash
+ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes $*`
+      );
+      fs.chmodSync(tempScript, 0o700);
+      gitSpawnOptions.env.GIT_SSH = tempScript;
+    }
     const beforeConnecting = existsInCheckout('deployment/before-connecting');
     if (fs.existsSync(checkout)) {
       try {
@@ -284,7 +301,7 @@ async function deploy(project, branch, timestamp, logName) {
             fs.removeSync(packageLock);
           }
         }
-        await spawnInCheckout('git', [ 'pull' ]);
+        await spawnInCheckout('git', [ 'pull' ], gitSpawnOptions);
         log.write('Deploying commit: ');
         await logCommitId();
         if (beforeConnecting) {
@@ -297,29 +314,7 @@ async function deploy(project, branch, timestamp, logName) {
       }
     }
     if (!updated) {
-      const options = {
-        env: {
-          ...process.env
-        }
-      };
-      let tempScript;
-      if (project['ssh-key']) {
-        // Support git 1.x, which only has GIT_SSH, not GIT_SSH_COMMAND, so we
-        // have to build a temporary script
-        tempScript = `${os.homedir()}/${project.name}-connect`;
-        fs.writeFileSync(tempScript, `#!/bin/bash
-ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes $*`
-        );
-        fs.chmodSync(tempScript, 0o700);
-        options.env.GIT_SSH = tempScript;
-      }
-      try {
-        await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ], options);
-      } finally {
-        if (tempScript) {
-          fs.unlinkSync(tempScript);
-        }
-      }
+      await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ], gitSpawnOptions);
       log.write('Deploying commit: ');
       await logCommitId();
       if (beforeConnecting) {
@@ -391,12 +386,17 @@ ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes $*`
     }
     throw e;
   } finally {
-    if (locked) {
-      await unlock(lockFile);
-    }
     if (log) {
       await log.close();
       await fs.rename(logFile, logFile.replace('.txt', '.final.txt'));
+    }
+    if (tempScript) {
+      if (fs.unlinkSync(tempScript)) {
+        fs.unlinkSync(tempScript);
+      }
+    }
+    if (locked) {
+      await unlock(lockFile);
     }
   }
 
