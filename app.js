@@ -8,6 +8,7 @@ const lockfile = require('lockfile');
 const quote = require('shell-quote').quote;
 const qs = require('qs');
 const sluggo = require('sluggo');
+const os = require('os');
 const lock = util.promisify(lockfile.lock);
 const unlock = util.promisify(lockfile.unlock);
 
@@ -301,10 +302,22 @@ async function deploy(project, branch, timestamp, logName) {
           ...process.env
         }
       };
+      let tempScript;
       if (project['ssh-key']) {
-        options.env.GIT_SSH_COMMAND = `ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes`;
+        // Support git 1.x, which only has GIT_SSH, not GIT_SSH_COMMAND, so we
+        // have to build a temporary script
+        tempScript = `os.homedir()/${project.name}-connect`;
+        fs.writeFileSync(temp, `ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes`);
+        fs.chmodSync(temp, 0o700);
+        options.env.GIT_SSH = temp;
       }
-      await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ], options);
+      try {
+        await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ], options);
+      } finally {
+        if (tempScript) {
+          fs.unlinkSync(tempScript);
+        }
+      }
       log.write('Deploying commit: ');
       await logCommitId();
       if (beforeConnecting) {
