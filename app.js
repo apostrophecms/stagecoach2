@@ -306,7 +306,7 @@ async function deploy(project, branch, timestamp, logName) {
       if (project['ssh-key']) {
         // Support git 1.x, which only has GIT_SSH, not GIT_SSH_COMMAND, so we
         // have to build a temporary script
-        tempScript = `os.homedir()/${project.name}-connect`;
+        tempScript = `${os.homedir()}/${project.name}-connect`;
         fs.writeFileSync(tempScript, `ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes`);
         fs.chmodSync(tempScript, 0o700);
         options.env.GIT_SSH = tempScript;
