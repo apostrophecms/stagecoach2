@@ -307,9 +307,9 @@ async function deploy(project, branch, timestamp, logName) {
         // Support git 1.x, which only has GIT_SSH, not GIT_SSH_COMMAND, so we
         // have to build a temporary script
         tempScript = `os.homedir()/${project.name}-connect`;
-        fs.writeFileSync(temp, `ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes`);
-        fs.chmodSync(temp, 0o700);
-        options.env.GIT_SSH = temp;
+        fs.writeFileSync(tempScript, `ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes`);
+        fs.chmodSync(tempScript, 0o700);
+        options.env.GIT_SSH = tempScript;
       }
       try {
         await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ], options);
