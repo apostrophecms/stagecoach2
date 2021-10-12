@@ -2,7 +2,7 @@
 
 ## Stability
 
-Alpha. Still experimental.
+Beta. Still experimental, but seeing use in staging environments.
 
 ## Configuration
 
@@ -13,7 +13,7 @@ Alpha. Still experimental.
   "projects": {
     "project-name": {      
       "key": "password-you-create",
-      "github-key": "private-deployment-key-from-github",
+      "ssh-key": "/usr/local/etc/keys/id.rsa",
       "repo": "https://github.com/yourorg/yourrepo",
       "slackWebhook": "https://api.slack.com/your/slack-webhook-here",
       "branches": {
@@ -65,7 +65,7 @@ https://your-site.com/stagecoach/deploy/project-name/main?key=password-you-creat
 
 **Step 7.** Create a slack webhook and add it to your configuration as shown above. This is how you will receive notice of deployments, including links to monitor deployment progress.
 
-**Step 8.** For private projects, add a github deployment key in github, and include that in your project's settings as shown above. Otherwise `stagecoach2` won't be able to deploy your project.
+**Step 8.** For private projects, generate an ssh keypair, copy the public key to github as a github deployment key for the project, copy the private key to a file on your server such as `/usr/local/etc/keys/my-project`, set the `ssh-key` option of the project to point to that file path in `/usr/local/etc/stagecoach.conf`, and set the `repo` option to a `git` URL like `git@github.com:myorg/myproject.git` (do not use an HTTPS URL). Otherwise `stagecoach2` won't be able to deploy your project.
 
 **Step 9.** Push any trivial change to your project to verify success. Deployment details will appear in the Slack channel associated with the Slack webhook you created.
 

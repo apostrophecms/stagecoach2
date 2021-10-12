@@ -296,7 +296,15 @@ async function deploy(project, branch, timestamp, logName) {
       }
     }
     if (!updated) {
-      await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ]);
+      const options = {
+        env: {
+          ...process.env
+        }
+      };
+      if (project['ssh-key']) {
+        options.env.GIT_SSH_COMMAND = `ssh -i ${project['ssh-key']} -o IdentitiesOnly=yes`;
+      }
+      await spawn('git', [ 'clone', '--single-branch', '--branch', branch.name, project.repo, checkout ], options);
       log.write('Deploying commit: ');
       await logCommitId();
       if (beforeConnecting) {
