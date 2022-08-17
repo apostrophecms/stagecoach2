@@ -25,9 +25,12 @@
     "boring": "^1.1.1",
     "dayjs": "^1.10.5",
     "express": "^4.17.1",
+    "express-session": "^1.17.3",
     "fs-extra": "^10.0.0",
     "lockfile": "^1.0.4",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
+    "passport": "^0.6.0",
+    "passport-oauth2": "^1.6.1",
     "qs": "^6.10.1",
     "shell-quote": "^1.7.2",
     "sluggo": "^0.3.1"
