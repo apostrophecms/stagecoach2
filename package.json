@@ -1,6 +1,6 @@
 {
   "name": "stagecoach2",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Deploy your projects to any Linux server with a simple \"git push\"",
   "repository": {
     "type": "git",

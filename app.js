@@ -39,8 +39,7 @@ const root = config.root || '/opt/stagecoach';
 
 fs.mkdirpSync(`${root}/logs/deployment`);
 
-app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
-  console.log(req.params);
+app.post('/stagecoach/deploy/:project/*', async (req, res) => {
   const host = req.get('Host');
   if (req.body.payload) {
     // urlencoded option for a github webhook is just JSON encoded
@@ -73,7 +72,7 @@ app.post('/stagecoach/deploy/:project/:branch', async (req, res) => {
   if (req.query.key !== project.key) {
     return res.status(403).send('incorrect key');
   }
-  const branchName = req.params.branch;
+  const branchName = req.params[0];
   if (!branchName) {
     return res.status(400).send('missing branch portion of URL');
   }
